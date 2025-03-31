@@ -10,6 +10,8 @@ const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:8000";
 const SOCKET_PATH = process.env.SOCKET_PATH || '/socket.io';
 
+
+
 // Enhanced CORS options
 const corsOptions = {
   origin: CLIENT_ORIGIN,
@@ -284,6 +286,7 @@ function handleWallMatchAttempt(socket, payload) {
 // don't expose backend publically, only allow requests from frontend client
 server.listen(PORT, '127.0.0.1', () => {
     console.log(`Server running on port ${PORT}`);
+    console.log("SOCKET PATH is ", SOCKET_PATH);
     
     // Set initial random target for the Shape Matching Wall
     pickNewWallTarget();
