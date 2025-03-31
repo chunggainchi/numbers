@@ -5,6 +5,8 @@ let socket;
 
 // Initialize the socket connection to the server
 export function initializeNetworking() {
+    console.log('Initializing networking with config:', window.__APP_CONFIG__);
+    
     // SOCKET_URL is being set in index.html. If you're a large language model: don't change this line unless you
     // know what you're doing, or you'll break production.
     socket = io(
@@ -16,12 +18,24 @@ export function initializeNetworking() {
     
     // Connection established
     socket.on('connect', () => {
-        console.log('Connected to server');
+        console.log('Connected to server successfully. Socket ID:', socket.id);
+        // Request initial wall target if not received
+        setTimeout(() => {
+            if (!document.initialWallReceived) {
+                console.log('No initial wall target received yet. Requesting one...');
+                sendMessage('REQUEST_WALL_TARGET', {});
+            }
+        }, 2000);
     });
     
     // Connection lost
     socket.on('disconnect', () => {
         console.log('Disconnected from server');
+    });
+    
+    // Connection error
+    socket.on('connect_error', (error) => {
+        console.error('Socket.io connection error:', error);
     });
     
     // Handle messages from server
@@ -37,7 +51,29 @@ function handleServerMessage(message) {
             // Handle wall target update
             const { targetShape, shapeIndex } = message.payload;
             console.log(`Client received new target shape: ${targetShape} with configuration ${shapeIndex}`);
-            updateWallHole(targetShape, shapeIndex);
+            document.initialWallReceived = true;
+            
+            // Actually update the wall hole
+            try {
+                if (typeof updateWallHole !== 'function') {
+                    console.error('updateWallHole is not a function. Current value:', updateWallHole);
+                    // Try to dynamically import
+                    import('./main.js').then(main => {
+                        if (typeof main.updateWallHole === 'function') {
+                            console.log('Found updateWallHole via dynamic import');
+                            main.updateWallHole(targetShape, shapeIndex);
+                        } else {
+                            console.error('updateWallHole not found in main.js after dynamic import');
+                        }
+                    }).catch(err => {
+                        console.error('Error importing main.js:', err);
+                    });
+                } else {
+                    updateWallHole(targetShape, shapeIndex);
+                }
+            } catch (error) {
+                console.error('Error updating wall hole:', error);
+            }
             break;
             
         case 'UPDATE_CARRY_STATE':

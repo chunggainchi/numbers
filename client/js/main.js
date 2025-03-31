@@ -180,7 +180,16 @@ const WALL_COLOR_HEX = 0xA9A9A9; // The wall's grey color
 function getCubeIndex(x, y) {
     // x: 0 to width-1, counting from left
     // y: 0 to height-1, counting from bottom
-    return x + (y * wallBlockWidth);
+    
+    // Check for invalid inputs
+    if (x < 0 || x >= wallBlockWidth || y < 0 || y >= wallBlockHeight) {
+        console.error(`Invalid wall coordinates: x=${x}, y=${y}. Wall dimensions: ${wallBlockWidth}x${wallBlockHeight}`);
+        return -1; // Invalid index
+    }
+    
+    const index = x + (y * wallBlockWidth);
+    console.log(`getCubeIndex(${x}, ${y}) = ${index}`);
+    return index;
 }
 
 // Function to update wall appearance with target shape cutout
@@ -248,6 +257,18 @@ function initializeWallCanvas() {
 function updateWallHole(targetShape, shapeIndex = 0) {
     console.log(`Updating wall hole for shape ${targetShape} with configuration ${shapeIndex}`);
     
+    // Safety check for wallStructure
+    if (!wallStructure) {
+        console.error('Wall structure not found when trying to update hole');
+        return;
+    }
+    
+    // Safety check for parameters
+    if (targetShape === undefined || targetShape === null) {
+        console.error('Invalid targetShape:', targetShape);
+        return;
+    }
+    
     // If a celebration is in progress, queue this update to happen after
     if (isCelebrating) {
         console.log("Celebration in progress, queuing wall update");
@@ -256,9 +277,15 @@ function updateWallHole(targetShape, shapeIndex = 0) {
     }
     
     // Get the shape configuration
+    if (!BLOCK_SHAPES[targetShape]) {
+        console.error(`Invalid target shape: ${targetShape}. Available shapes:`, Object.keys(BLOCK_SHAPES));
+        return;
+    }
+    
     const shape = BLOCK_SHAPES[targetShape][shapeIndex];
     if (!shape) {
         console.error(`Invalid shape configuration: ${targetShape}, ${shapeIndex}`);
+        console.log('Available configurations:', BLOCK_SHAPES[targetShape]);
         return;
     }
     
@@ -269,14 +296,21 @@ function updateWallHole(targetShape, shapeIndex = 0) {
     const numStacks = shape.length;
     const startColumn = middleColumn - Math.floor((numStacks - 1) / 2);
     
+    console.log(`Wall hole details: middleColumn=${middleColumn}, numStacks=${numStacks}, startColumn=${startColumn}`);
+    console.log(`Shape configuration:`, shape);
+    
     // Reset all wall blocks to visible
+    let visibleCount = 0;
     for (let i = 0; i < wallStructure.children.length; i++) {
         if (wallStructure.children[i]) {
             wallStructure.children[i].visible = true;
+            visibleCount++;
         }
     }
+    console.log(`Reset ${visibleCount} wall blocks to visible`);
     
     // For each stack in the shape
+    let removedCount = 0;
     for (let stackIndex = 0; stackIndex < numStacks; stackIndex++) {
         const stackHeight = shape[stackIndex];
         const currentColumn = startColumn + stackIndex;
@@ -284,13 +318,25 @@ function updateWallHole(targetShape, shapeIndex = 0) {
         // Remove cubes for this stack from bottom up
         for (let y = 0; y < stackHeight; y++) {
             const index = getCubeIndex(currentColumn, y);
+            if (index < 0 || index >= wallStructure.children.length) {
+                console.error(`Invalid wall cube index: ${index} (column=${currentColumn}, y=${y})`);
+                continue;
+            }
+            
             if (wallStructure.children[index]) {
                 wallStructure.children[index].visible = false;
+                removedCount++;
+            } else {
+                console.error(`Wall cube not found at index ${index} (column=${currentColumn}, y=${y})`);
             }
         }
     }
     
+    console.log(`Made ${removedCount} wall blocks invisible to create the hole`);
     console.log(`Updated wall hole for shape ${targetShape} with configuration ${shapeIndex}`);
+    
+    // Mark that we've successfully updated the wall
+    document.initialWallReceived = true;
 }
 
 // Function to build a block structure (wall, platform, etc)

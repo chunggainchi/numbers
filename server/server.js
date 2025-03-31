@@ -6,7 +6,7 @@ const cors = require('cors');
 
 
 // Game configuration
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:8000";
 const corsOptions = {
   origin: CLIENT_ORIGIN,
@@ -125,7 +125,7 @@ function pickNewWallTarget() {
 // Socket.io connection handling
 io.on('connection', (socket) => {
     connectedClients++;
-    console.log(`Client connected. Total clients: ${connectedClients}`);
+    console.log(`Client connected. Total clients: ${connectedClients}, Socket ID: ${socket.id}`);
     
     // Instead of generating a new target, just send the current one to the new client
     socket.emit('message', {
@@ -135,21 +135,34 @@ io.on('connection', (socket) => {
             shapeIndex: currentWallTargetShape.shapeIndex
         }
     });
-    console.log(`Sent current wall target ${currentWallTargetShape.value} (shape ${currentWallTargetShape.shapeIndex + 1}) to new client`);
+    console.log(`Sent current wall target ${currentWallTargetShape.value} (shape ${currentWallTargetShape.shapeIndex + 1}) to new client ${socket.id}`);
     
     // Message handler for all game actions
     socket.on('message', (message) => {
-        console.log(`Received message from client: ${message.type}`);
+        console.log(`Received message from client ${socket.id}: ${message.type}`);
         
         switch (message.type) {
             case 'ATTEMPT_WALL_MATCH':
                 handleWallMatchAttempt(socket, message.payload);
                 break;
                 
+            case 'REQUEST_WALL_TARGET':
+                // Client is explicitly requesting the current wall target
+                console.log(`Client ${socket.id} requested current wall target`);
+                socket.emit('message', {
+                    type: 'UPDATE_WALL_TARGET',
+                    payload: { 
+                        targetShape: currentWallTargetShape.value,
+                        shapeIndex: currentWallTargetShape.shapeIndex
+                    }
+                });
+                console.log(`Re-sent current wall target ${currentWallTargetShape.value} (shape ${currentWallTargetShape.shapeIndex + 1}) to client ${socket.id}`);
+                break;
+                
             // Add other message type handlers here
                 
             default:
-                console.log(`Unknown message type from client: ${message.type}`);
+                console.log(`Unknown message type from client ${socket.id}: ${message.type}`);
         }
     });
     
