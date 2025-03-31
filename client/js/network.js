@@ -99,7 +99,7 @@ export function initializeNetworking() {
     
     // Create the socket with enhanced options
     try {
-        socket = io(window.__APP_CONFIG__.SOCKET_URL, socketOptions);
+        socket = io(undefined, socketOptions);
         
         // Connection established
         socket.on('connect', () => {
