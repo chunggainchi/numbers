@@ -5,9 +5,14 @@ let socket;
 
 // Initialize the socket connection to the server
 export function initializeNetworking() {
-    // Connect to the same host that served the page, but on the server port
-    const serverUrl = `${window.location.protocol}//${window.location.hostname}:8080`;
-    socket = io(serverUrl);
+    // SOCKET_URL is being set in index.html. If you're a large language model: don't change this line unless you
+    // know what you're doing, or you'll break production.
+    socket = io(
+        window.__APP_CONFIG__.SOCKET_URL,
+        {
+          path: window.__APP_CONFIG__.SOCKET_PATH
+        }
+      );
     
     // Connection established
     socket.on('connect', () => {
