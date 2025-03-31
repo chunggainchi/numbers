@@ -89,7 +89,7 @@ export function initializeNetworking() {
     // Improved Socket.io configuration
     const socketOptions = {
         path: window.__APP_CONFIG__.SOCKET_PATH,
-        transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling if needed
+        transports: ['websocket'], 
         reconnectionAttempts: 5,              // Try to reconnect 5 times
         reconnectionDelay: 1000,              // Start with 1s delay
         reconnectionDelayMax: 5000,           // Maximum 5s delay
