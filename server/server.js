@@ -4,18 +4,22 @@ const socketIO = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-    cors: {
-        origin: "http://localhost:8000",
-        methods: ["GET", "POST"],
-        credentials: true
-    }
-});
 
 // Game configuration
 const PORT = process.env.PORT || 8080;
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:8000";
+const corsOptions = {
+  origin: CLIENT_ORIGIN,
+  methods: ["GET", "POST"],
+  credentials: true
+};
+
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server, { cors: corsOptions });
+
+
 
 // Block shape configurations
 const BLOCK_SHAPES = {
@@ -61,14 +65,13 @@ const BLOCK_SHAPES = {
 };
 
 // Use CORS middleware for Express
-app.use(cors({
-    origin: "http://localhost:8000",
-    methods: ["GET", "POST"],
-    credentials: true
-}));
+app.use(cors(corsOptions));
 
-// Serve static files from the client directory
-app.use(express.static(path.join(__dirname, '../client')));
+// Dev mode only: Serve static files from the client directory
+// in production frontend/nginx will serve files separately
+if (process.env.NODE_ENV !== 'production') {
+  app.use(express.static(path.join(__dirname, '../client')));
+}
 
 // Game state
 let connectedClients = 0;
@@ -246,7 +249,8 @@ function handleWallMatchAttempt(socket, payload) {
 }
 
 // Start the server
-server.listen(PORT, () => {
+// don't expose backend publically, only allow requests from frontend client
+server.listen(PORT, '127.0.0.1', () => {
     console.log(`Server running on port ${PORT}`);
     
     // Set initial random target for the Shape Matching Wall
