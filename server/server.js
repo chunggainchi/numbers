@@ -34,6 +34,7 @@ const io = socketIO(server, {
   maxHttpBufferSize: 1e6                // 1MB max message size
 });
 
+console.log("CLIENT_ORIGIN is", process.env.CLIENT_ORIGIN);
 // Monitor socket.io connection issues
 io.engine.on("connection_error", (err) => {
   console.error("Connection error:", err.req.url, err.code, err.message, err.context);
