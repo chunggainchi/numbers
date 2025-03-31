@@ -1,73 +1,101 @@
-# Number Buddies Game
+# Number Buddies Playground
 
-A interactive 3D game built with Three.js and Node.js.
+A fun, interactive 3D game to help children learn basic mathematics through combining, breaking down, and transforming number blocks.
 
-## Prerequisites
+## Overview
 
-- Node.js (latest LTS version recommended)
-- A local server for the client (like `http-server`, `live-server`, or VS Code's Live Server extension)
+Number Buddies Playground is an educational game where players can pick up, combine, and transform blocks with different numeric values. The game includes special objects like a magical mirror that duplicates blocks, a trash can for disposing blocks, and a wall with shapes to match.
+
+## Features
+
+- Interactive 3D environment with intuitive controls
+- Combine blocks to create numbers up to 5
+- Transform blocks into different shape configurations
+- Break down larger blocks into individual units
+- Match block configurations with the wall target
+- Educational audio feedback and visual effects
+
+## Requirements
+
+- Node.js (v14 or higher)
+- Modern web browser with WebGL support (Chrome, Firefox, Safari, Edge)
 
 ## Installation
 
 1. Clone the repository:
-```bash
-git clone [your-repository-url]
-cd [repository-name]
+```
+git clone <repository-url>
+cd number-buddies-playground
 ```
 
-2. Install server dependencies:
-```bash
+2. Install dependencies for the server:
+```
 cd server
 npm install
-```
-
-3. Install a local server globally (if you don't have one):
-```bash
-npm install -g http-server
-# OR
-npm install -g live-server
+cd ..
 ```
 
 ## Running the Game
 
-1. Start the server:
-```bash
-cd server
+The game consists of a server component and a client interface. You need to start the server first, then access the client through a web browser.
+
+### Starting the Server
+
+1. Navigate to the server directory:
+```
+cd number-buddies-playground/server
+```
+
+2. Start the server:
+```
 node server.js
 ```
-The server will run on port 8080 by default.
 
-2. In a separate terminal, serve the client directory:
-```bash
-cd client
-http-server -p 8000
-# OR
-live-server --port=8000
+You should see a message indicating that the server is running on port 8080.
+
+### Accessing the Game
+
+1. Open a web browser and navigate to:
+```
+http://localhost:8080
 ```
 
-Alternatively, you can use VS Code's Live Server extension to serve the client directory on port 8000.
-
-3. Open your browser and navigate to:
-http://localhost:8000
+The game should load automatically and you'll be greeted with the 3D environment and a controls guide.
 
 ## Game Controls
 
-- **Move**: Arrow keys
-- **Pick up blocks**: A key
-- **Drop blocks**: W key
-- **Transform shape**: T key
-- **Break down blocks**: K key
-- **Combine blocks**: Drag & drop one onto another
+- **Arrow Keys**: Move the avatar
+- **A Key**: Pick up blocks (when nearby)
+- **W Key**: Drop carried blocks
+- **T Key**: Transform block shapes (works while carrying too)
+- **K Key**: Break down blocks into smaller units
+- **Mouse/Pointer**: Drag and drop blocks to combine them
+- **Click**: Interact with objects (mirror, trash can, wall)
 
-## Development
+## Troubleshooting
 
-The project is structured into two main parts:
-- `client/`: Contains the front-end game code using Three.js
-- `server/`: Contains the Node.js server for multiplayer functionality
+- **Game doesn't load**: Make sure the server is running and check browser console for errors
+- **No sounds**: Some browsers require user interaction before playing audio
+- **Performance issues**: Reduce browser tabs/applications running in the background
+
+## Shutting Down
+
+To stop the server, press `Ctrl+C` in the terminal/command prompt where the server is running.
 
 ## Technologies Used
 
 - Three.js for 3D rendering
-- Socket.io for real-time multiplayer functionality
-- Express.js for the server
-- Node.js for the backend runtime
+- Socket.io for client-server communication
+- Express for the web server framework
+
+## Asset Credits
+
+The game uses various 3D models and audio assets:
+- Character avatar (Boo)
+- Magical mirror
+- Trash can
+- Audio effects for interactions
+
+---
+
+Enjoy playing and learning with Number Buddies Playground!
