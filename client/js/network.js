@@ -97,9 +97,15 @@ export function initializeNetworking() {
         forceNew: true                        // Create a new connection
     };
     
+    // in prod, nginx takes care of wildcard matching for the relative path
+    // in local development, we want to pass the full backend url
+    const socketUrl = window.__APP_CONFIG__.SOCKET_URL.startsWith('/')
+        ? undefined
+        : window.__APP_CONFIG__.SOCKET_URL;
+
     // Create the socket with enhanced options
     try {
-        socket = io(undefined, socketOptions);
+        socket = io(socketUrl, socketOptions);
         
         // Connection established
         socket.on('connect', () => {
