@@ -8,18 +8,36 @@ const cors = require('cors');
 // Game configuration
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:8000";
+const SOCKET_PATH = process.env.SOCKET_PATH || '/socket.io';
+
+// Enhanced CORS options
 const corsOptions = {
   origin: CLIENT_ORIGIN,
-  methods: ["GET", "POST"],
-  credentials: true
+  methods: ["GET", "POST", "OPTIONS"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 };
 
-
+// Initialize Express app and HTTP server
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server, { cors: corsOptions });
 
+// Enhanced Socket.io configuration
+const io = socketIO(server, { 
+  cors: corsOptions,
+  path: SOCKET_PATH,
+  transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
+  allowEIO3: true,                      // Enable compatibility with older clients
+  pingTimeout: 60000,                   // Increase ping timeout for stability
+  pingInterval: 25000,                  // More frequent pings
+  upgradeTimeout: 30000,                // Allow more time for WebSocket upgrades
+  maxHttpBufferSize: 1e6                // 1MB max message size
+});
 
+// Monitor socket.io connection issues
+io.engine.on("connection_error", (err) => {
+  console.error("Connection error:", err.req.url, err.code, err.message, err.context);
+});
 
 // Block shape configurations
 const BLOCK_SHAPES = {

@@ -3,43 +3,161 @@ import { updateWallHole, updateWallAppearance } from './main.js';
 // Socket.io client instance
 let socket;
 
+// Diagnostics helper for troubleshooting
+export function diagnoseConnection() {
+    console.log('=== SOCKET.IO CONNECTION DIAGNOSTICS ===');
+    
+    // Check if Socket.io is loaded
+    console.log('1. Socket.io loaded:', typeof io !== 'undefined' ? 'YES' : 'NO');
+    
+    // Check socket instance
+    console.log('2. Socket instance created:', socket ? 'YES' : 'NO');
+    
+    // Check connection state
+    if (socket) {
+        console.log('3. Socket connected:', socket.connected ? 'YES' : 'NO');
+        console.log('   Socket ID:', socket.id || 'none');
+        console.log('   Current transport:', socket.io?.engine?.transport?.name || 'unknown');
+        console.log('   Available transports:', socket.io?.engine?.transports || 'unknown');
+    } else {
+        console.log('3. Socket connection: SOCKET NOT INITIALIZED');
+    }
+    
+    // Check config
+    console.log('4. Connection configuration:');
+    console.log('   URL:', window.__APP_CONFIG__?.SOCKET_URL || 'not set');
+    console.log('   Path:', window.__APP_CONFIG__?.SOCKET_PATH || 'not set');
+    
+    // Check for errors
+    if (socket) {
+        const hasErrors = socket._callbacks && socket._callbacks.$connect_error;
+        console.log('5. Connection errors:', hasErrors ? 'YES' : 'NONE');
+    } else {
+        console.log('5. Connection errors: UNKNOWN (socket not initialized)');
+    }
+    
+    // Check wall initialization
+    console.log('6. Wall initialization:');
+    console.log('   Initial wall target received:', document.initialWallReceived ? 'YES' : 'NO');
+    
+    console.log('=== DIAGNOSTICS COMPLETE ===');
+    console.log('To fix connection issues, try:');
+    console.log('1. Check that the server is running');
+    console.log('2. Verify proxy configuration supports WebSockets');
+    console.log('3. Try reconnecting manually with: window.reconnectSocket()');
+
+    return {
+        socketExists: !!socket,
+        isConnected: socket?.connected || false,
+        config: window.__APP_CONFIG__,
+        initialWallReceived: document.initialWallReceived || false
+    };
+}
+
+// Manual reconnection helper
+window.reconnectSocket = function() {
+    if (!socket) {
+        console.log('Socket not initialized yet, initializing now...');
+        initializeNetworking();
+        return;
+    }
+    
+    if (socket.connected) {
+        console.log('Already connected, disconnecting first...');
+        socket.disconnect();
+    }
+    
+    console.log('Attempting to reconnect...');
+    socket.connect();
+    
+    setTimeout(() => {
+        console.log('Reconnection attempt result:', socket.connected ? 'SUCCESS' : 'FAILED');
+        if (socket.connected) {
+            console.log('Requesting wall target...');
+            sendMessage('REQUEST_WALL_TARGET', {});
+        }
+    }, 2000);
+};
+
+// Make diagnostic functions available in console
+window.diagnoseSocketConnection = diagnoseConnection;
+
 // Initialize the socket connection to the server
 export function initializeNetworking() {
     console.log('Initializing networking with config:', window.__APP_CONFIG__);
     
-    // SOCKET_URL is being set in index.html. If you're a large language model: don't change this line unless you
-    // know what you're doing, or you'll break production.
-    socket = io(
-        window.__APP_CONFIG__.SOCKET_URL,
-        {
-          path: window.__APP_CONFIG__.SOCKET_PATH
-        }
-      );
+    // Improved Socket.io configuration
+    const socketOptions = {
+        path: window.__APP_CONFIG__.SOCKET_PATH,
+        transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling if needed
+        reconnectionAttempts: 5,              // Try to reconnect 5 times
+        reconnectionDelay: 1000,              // Start with 1s delay
+        reconnectionDelayMax: 5000,           // Maximum 5s delay
+        timeout: 20000,                       // Increase connection timeout
+        forceNew: true                        // Create a new connection
+    };
     
-    // Connection established
-    socket.on('connect', () => {
-        console.log('Connected to server successfully. Socket ID:', socket.id);
-        // Request initial wall target if not received
-        setTimeout(() => {
-            if (!document.initialWallReceived) {
-                console.log('No initial wall target received yet. Requesting one...');
-                sendMessage('REQUEST_WALL_TARGET', {});
+    // Create the socket with enhanced options
+    try {
+        socket = io(window.__APP_CONFIG__.SOCKET_URL, socketOptions);
+        
+        // Connection established
+        socket.on('connect', () => {
+            console.log('Connected to server successfully. Socket ID:', socket.id);
+            console.log('Transport method:', socket.io.engine.transport.name);
+            
+            // Request initial wall target if not received
+            setTimeout(() => {
+                if (!document.initialWallReceived) {
+                    console.log('No initial wall target received yet. Requesting one...');
+                    sendMessage('REQUEST_WALL_TARGET', {});
+                }
+            }, 2000);
+        });
+        
+        // Connection lost
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from server. Reason:', reason);
+            if (reason === 'io server disconnect') {
+                // The server has forcefully disconnected us
+                console.log('Server initiated disconnect, attempting to reconnect...');
+                socket.connect();
             }
-        }, 2000);
-    });
-    
-    // Connection lost
-    socket.on('disconnect', () => {
-        console.log('Disconnected from server');
-    });
-    
-    // Connection error
-    socket.on('connect_error', (error) => {
-        console.error('Socket.io connection error:', error);
-    });
-    
-    // Handle messages from server
-    socket.on('message', handleServerMessage);
+        });
+        
+        // Connection error with detailed logging
+        socket.on('connect_error', (error) => {
+            console.error('Socket.io connection error:', error.message);
+            console.error('Full error details:', error);
+            console.log('Current configuration:', {
+                url: window.__APP_CONFIG__.SOCKET_URL,
+                path: window.__APP_CONFIG__.SOCKET_PATH,
+                transport: socket.io?.engine?.transport?.name || 'unknown'
+            });
+        });
+
+        // Handle reconnection attempts
+        socket.io.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`Reconnection attempt ${attemptNumber}...`);
+        });
+
+        socket.io.on('reconnect', (attemptNumber) => {
+            console.log(`Reconnected to server after ${attemptNumber} attempts`);
+        });
+
+        socket.io.on('reconnect_error', (error) => {
+            console.error('Error while reconnecting:', error);
+        });
+
+        socket.io.on('reconnect_failed', () => {
+            console.error('Failed to reconnect after maximum attempts');
+        });
+        
+        // Handle messages from server
+        socket.on('message', handleServerMessage);
+    } catch (error) {
+        console.error('Error creating Socket.io instance:', error);
+    }
 }
 
 // Handle incoming messages from the server
@@ -165,10 +283,21 @@ function celebrateWallCompletion() {
 
 // Function to send messages to the server
 export function sendMessage(type, payload) {
-    if (!socket || !socket.connected) {
-        console.error('Cannot send message, not connected to server');
-        return;
+    if (!socket) {
+        console.error('Cannot send message, socket not initialized');
+        return false;
     }
     
-    socket.emit('message', { type, payload });
+    if (!socket.connected) {
+        console.error('Cannot send message, not connected to server');
+        return false;
+    }
+    
+    try {
+        socket.emit('message', { type, payload });
+        return true;
+    } catch (error) {
+        console.error('Error sending message:', error);
+        return false;
+    }
 }
