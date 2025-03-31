@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Buddies Playground</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Load Three.js directly from CDN -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #DCEDFF; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            color: black;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 100;
+            pointer-events: none;
+        }
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 300px;
+            max-width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>Number Buddies Playground</h1>
+        <p>
+            Use arrow keys to move. <br>
+            Press 'A' to pick up blocks. <br>
+            Press 'W' to drop carried blocks. <br>
+            Press 'K' to break down blocks. <br>
+            Press 'T' to transform blocks. <br>
+        </p>
+    </div>
+    
+    <div id="debug-info" class="debug-info">Loading...</div>
+    
+    <script>
+        // Create debug log function
+        function log(message) {
+            console.log(message);
+            const debugDiv = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML = `<strong>${timestamp}</strong>: ${message}<br>` + 
+                                 debugDiv.innerHTML.split('<br>').slice(0, 10).join('<br>');
+        }
+        
+        // Simple direct test code for Three.js
+        let scene, camera, renderer, cube;
+        
+        function init() {
+            log("Initializing basic test scene");
+            
+            // Basic scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xDCEDFF); // Light blue
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create renderer
+            try {
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+                log("Renderer created");
+            } catch (e) {
+                log("ERROR creating renderer: " + e.message);
+                alert("Failed to create WebGL renderer. Your browser may not support WebGL.");
+                return;
+            }
+            
+            // Create a simple red cube
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            log("Added red cube to scene");
+            
+            // Start animation
+            animate();
+            log("Animation started");
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (cube) {
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Start initialization when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
